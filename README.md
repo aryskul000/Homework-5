@@ -1,0 +1,166 @@
+---
+title: 'Homework #5'
+author: "Adil Ryskulov"
+date: "10/26/2020"
+output: html_document
+---
+
+Group members: Adil Ryskulov and Zhanna Sarsenova.
+
+# In our analysis we want to how specific diferenciation factors such as education level or gende will affect in income from wages. In oeder to perform this analysis we will use acs2017_ny data. From this dataset, we will create a subsets of people in between 25 and 65 years old, who warked at lest 36 hour per week, and who worked at leat 26 weeks in last year. Also, we want to consider those who completed any educational degree (High School, College, and Advanced degrees only, we want to exclude others.). Finaly, we want to consider only New York City residents only.
+
+
+
+```{r}
+attach(acs2017_ny)
+use_varb <-(AGE>24)&(AGE<66)&(in_NYC==1)&((educ_hs==1)|(educ_college == 1)|(educ_advdeg == 1))
+dat_use<-subset(acs2017_ny,use_varb) #
+detach()
+attach(dat_use)
+```
+
+
+
+# First, we want to build a model with age and age squared variables with educat level variebles (High School level to be baseline to which we will compare other two education levels).
+
+```{r}
+ModelEducation <- lm (INCWAGE ~ AGE + I(AGE^2) + educ_college + educ_advdeg, data=dat_use)
+summary(ModelEducation)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(ModelEducation,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+
+```{r}
+confint(ModelEducation,level=0.95)
+```
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <- subset(dat_use,graph_obs)
+
+plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+
+to_be_predicted1 <- data.frame(AGE = 25:65, educ_college = 1, educ_advdeg = 1)
+to_be_predicted1$yhat <- predict(ModelEducation, newdata = to_be_predicted1)
+
+lines(yhat ~ AGE, data = to_be_predicted1)
+```
+
+The p-value of all variembels in "ModelEducation" are lover than 0.01, which indicates that these values are statistically significant and proves the relationship between income from wages and these variables. 
+The graph above shows a convexity of regression function, which indicates that income from wages will grow at the earlier carier and pick about 47 years and since then starts falling.
+
+
+
+# Secondly, we want to build a model, age and age squared and higher polinominal age variables with educat level variebles (High School level to be baseline to which we will compare other two education levels).
+
+```{r}
+ModelEducationHigh <- lm (INCWAGE ~ AGE + I(AGE^2) + I(AGE^3) + I(AGE^4) + educ_college + educ_advdeg, data=dat_use)
+summary(ModelEducationHigh)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(ModelEducationHigh,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+
+```{r}
+confint(ModelEducationHigh,level=0.95)
+```
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <- subset(dat_use,graph_obs)
+
+plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+
+to_be_predicted2 <- data.frame(AGE = 25:65, educ_college = 1, educ_advdeg = 1)
+to_be_predicted2$yhat <- predict(ModelEducationHigh, newdata = to_be_predicted2)
+
+lines(yhat ~ AGE, data = to_be_predicted2)
+```
+
+The "AGE" variable p- value of 0.0211, which is lower than 0.05 significance level and this varieble is statistically significant at 95% interval. Meanwhile, the "y" intersection is not statistically significant at 95% significants level and does not proves relationships with income from wages. Meanwhile, other variables statistically significant at 99% significanse level and this proves relationshipn between these varieble and income from wages.
+The higher polinominals introduced in this model serve as outliers whith which we do not satisfy. These polinominals devalued relationships other variables for income estimate and eliminated effect of "y" intersaction.
+Regression function still holds convexity and represents that income from wages keeps increasing along with age in first half of carier and after roughly 45th years income starts falling.
+
+
+
+# Now, we constract a new model using log(AGE) variable in our new model.
+
+```{r}
+ModelEducationLog <- lm (INCWAGE ~ log(AGE) + educ_college + educ_advdeg, data=dat_use)
+summary(ModelEducationHigh)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(ModelEducationLog,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+
+```{r}
+confint(ModelEducationLog,level=0.95)
+```
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <- subset(dat_use,graph_obs)
+
+plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+
+to_be_predicted3 <- data.frame(AGE = 25:65, educ_college = 1, educ_advdeg = 1)
+to_be_predicted3$yhat <- predict(ModelEducationLog, newdata = to_be_predicted3)
+
+lines(yhat ~ AGE, data = to_be_predicted3)
+```
+
+All varieble have p-value lover than 0.01, which means that all of them are statistically significant at 99% significants level. This means that these variebles have relationship with estimating income from wages. 
+The regression function is linear with negative slope which means that income falls with growth of age.
+
+
+
+Three models above demostrates that polinimonal and logarithic variebles are useless. We do not belive that age somehow affect income for all education level. The seniority is relevant for these with college and advanced degrees while physical productivity is more relavant for high school graduates only.
+
+
+
+# Finaly, we want to intorduce new variables with polinominal and logarithmic variables. 
+
+```{r}
+ModelEducationFinal <- lm (INCWAGE ~ AGE + log(AGE) + I(educ_college*(AGE^2)) + I(educ_advdeg*(AGE^2)), data=dat_use)
+summary(ModelEducationFinal)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(ModelEducationFinal,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+
+```{r}
+confint(ModelEducationFinal,level=0.95)
+```
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345)
+graph_obs <- (runif(NNobs) < 0.1)
+dat_graph <- subset(dat_use,graph_obs)
+
+plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+
+to_be_predicted4 <- data.frame(AGE = 25:65, educ_college = 1, educ_advdeg = 1)
+to_be_predicted4$yhat <- predict(ModelEducationFinal, newdata = to_be_predicted4)
+
+lines(yhat ~ AGE, data = to_be_predicted4)
+```
+
+All values have p-values belov 0.01 which indicates that they all statisticaly significant and have affect on estimating income from wages. 
+From the first glance, the regressional model shown i table obove is intuativly correct where the earliest years in carier experiensing high income growth rate from wages and the growth rate slows down in later ages.
+However, the estimate of college graduates miltiplied by age squared was higher that the estimate of advanced degree holders multiplied by age squared. Because advanced degree holder completed a college degree prior to advanced degree it is expected them to be able to earn higher income and this is expected to have higher estimate.
